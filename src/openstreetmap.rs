@@ -23,7 +23,7 @@ use crate::UA_STRING;
 use crate::{Client, HeaderMap, HeaderValue, USER_AGENT};
 use crate::{Deserialize, Serialize};
 use crate::{Forward, Reverse};
-use num_traits::Float;
+use geo_types::CoordFloat;
 
 /// An instance of the Openstreetmap geocoding service
 pub struct Openstreetmap {
@@ -34,7 +34,7 @@ pub struct Openstreetmap {
 /// An instance of a parameter builder for Openstreetmap geocoding
 pub struct OpenstreetmapParams<'a, T>
 where
-    T: Float,
+    T: CoordFloat,
 {
     query: &'a str,
     addressdetails: bool,
@@ -43,7 +43,7 @@ where
 
 impl<'a, T> OpenstreetmapParams<'a, T>
 where
-    T: Float,
+    T: CoordFloat,
 {
     /// Create a new OpenStreetMap parameter builder
     /// # Example:
@@ -131,20 +131,20 @@ impl Openstreetmap {
     ///     (-0.13806939125061035, 51.51989264641164),
     ///     (-0.13427138328552246, 51.52319711775629),
     /// );
-    /// let params = OpenstreetmapParams::new(&"University College London")
+    /// let params = OpenstreetmapParams::new(&"UCL CASA")
     ///     .with_addressdetails(true)
     ///     .with_viewbox(&viewbox)
     ///     .build();
     /// let res: OpenstreetmapResponse<f64> = osm.forward_full(&params).unwrap();
     /// let result = res.features[0].properties.clone();
-    /// assert!(result.display_name.contains("London Borough of Camden, London, Greater London"));
+    /// assert!(result.display_name.contains("Gordon Square"));
     /// ```
     pub fn forward_full<T>(
         &self,
         params: &OpenstreetmapParams<T>,
     ) -> Result<OpenstreetmapResponse<T>, GeocodingError>
     where
-        T: Float,
+        T: CoordFloat,
         for<'de> T: Deserialize<'de>,
     {
         let format = String::from("geojson");
@@ -182,7 +182,7 @@ impl Default for Openstreetmap {
 
 impl<T> Forward<T> for Openstreetmap
 where
-    T: Float,
+    T: CoordFloat,
     for<'de> T: Deserialize<'de>,
 {
     /// A forward-geocoding lookup of an address. Please see [the documentation](https://nominatim.org/release-docs/develop/api/Search/) for details.
@@ -206,7 +206,7 @@ where
 
 impl<T> Reverse<T> for Openstreetmap
 where
-    T: Float,
+    T: CoordFloat,
     for<'de> T: Deserialize<'de>,
 {
     /// A reverse lookup of a point. More detail on the format of the
@@ -283,7 +283,7 @@ where
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenstreetmapResponse<T>
 where
-    T: Float,
+    T: CoordFloat,
 {
     pub r#type: String,
     pub licence: String,
@@ -294,7 +294,7 @@ where
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenstreetmapResult<T>
 where
-    T: Float,
+    T: CoordFloat,
 {
     pub r#type: String,
     pub properties: ResultProperties,
@@ -338,7 +338,7 @@ pub struct AddressDetails {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResultGeometry<T>
 where
-    T: Float,
+    T: CoordFloat,
 {
     pub r#type: String,
     pub coordinates: (T, T),
@@ -353,7 +353,7 @@ mod test {
         let osm =
             Openstreetmap::new_with_endpoint("https://nominatim.openstreetmap.org/".to_string());
         let address = "Schwabing, München";
-        let res = osm.forward(&address);
+        let res = osm.forward(address);
         assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
     }
 
@@ -364,15 +364,13 @@ mod test {
             (-0.13806939125061035, 51.51989264641164),
             (-0.13427138328552246, 51.52319711775629),
         );
-        let params = OpenstreetmapParams::new(&"UCL CASA")
+        let params = OpenstreetmapParams::new("UCL CASA")
             .with_addressdetails(true)
             .with_viewbox(&viewbox)
             .build();
         let res: OpenstreetmapResponse<f64> = osm.forward_full(&params).unwrap();
         let result = res.features[0].properties.clone();
-        assert!(result
-            .display_name
-            .contains("London Borough of Camden, London, Greater London"));
+        assert!(result.display_name.contains("Gordon Square"));
         assert_eq!(result.address.unwrap().city.unwrap(), "London");
     }
 
@@ -380,7 +378,7 @@ mod test {
     fn forward_test() {
         let osm = Openstreetmap::new();
         let address = "Schwabing, München";
-        let res = osm.forward(&address);
+        let res = osm.forward(address);
         assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
     }
 
